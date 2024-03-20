@@ -2,6 +2,8 @@ import { scheduleCallback } from 'scheduler';
 import { createWorkInProgress } from './ReactFiber';
 import { beginWork } from './ReactFiberBeginWork';
 import { completeWork } from './ReactFiberCompleteWork';
+import { MutationMask, NoFlags } from './ReactFiberFlags';
+import { commitMutationEffectsOnFiber } from './ReactFiberCommitWork';
 let workInProgress = null;
 /**
  * 计划更新root
@@ -23,7 +25,26 @@ function ensureRootIsScheduled(root) {
 function performConcurrentWorkOnRoot(root) {
     //以同步的方式渲染根节点，初次渲染的时候都是同步
     renderRootSync(root);
+    console.log(root);
+    //开始进入提交阶段，就是执行副作用，修改真实dom
+    const finishedWork = root.current.alternate;
+    root.finishedWork = finishedWork;
+    commitRoot(root);
 }
+
+function commitRoot(root) {
+    const { finishedWork } = root;
+    //判断子树有没有副作用
+    const subtreeHasEffects = (finishedWork.subtreeFlags & MutationMask) !== NoFlags;
+    const rootHasEffect = (finishedWork.flags & MutationMask) !== NoFlags;
+    //如果自己或者子节点有副作用，就进行提交dom操作
+    if (subtreeHasEffects || rootHasEffect) {
+        commitMutationEffectsOnFiber(finishedWork, root);
+    }
+    //等dom变更后，就可以把让root的current指向新的fiber树
+    root.current = finishedWork;
+}
+
 function prepareFreshStack(root) {
     workInProgress = createWorkInProgress(root.current, null);
     console.log(workInProgress);
