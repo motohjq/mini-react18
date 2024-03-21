@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
+    server: {
+        port: 8000
+    },
     resolve: {
         alias: {
             react: path.resolve("src/react"),
@@ -15,5 +18,8 @@ export default defineConfig({
     },
     plugins: [
         react()
-    ]
+    ],
+    optimizeDeps: {
+        force: true,
+    }
 });
