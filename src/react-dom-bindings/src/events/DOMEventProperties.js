@@ -6,7 +6,7 @@ export const topLevelEventsToReactNames = new Map();
 function registerSimpleEvent(domEventName, reactName) {
     //把原生事件名和处理函数的名字进行映射或者绑定，click->onClick
     topLevelEventsToReactNames.set(domEventName, reactName);
-    registerTwoPhaseEvent(reactName, [domEventName]);//onClick ['click']
+    registerTwoPhaseEvent(reactName, [domEventName]);//onClick ['click'] 注册冒泡和捕获的回调
 }
 
 export function registerSimpleEvents() {

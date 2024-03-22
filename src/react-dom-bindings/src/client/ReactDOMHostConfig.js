@@ -8,6 +8,13 @@ export function createTextInstance(content) {
     return document.createTextNode(content);
 }
 
+/**
+ * 在原生组件初次挂载的时候，会通过此方法创建真实dom
+ * @param {*} type 类型span
+ * @param {*} props 属性
+ * @param {*} internalInstanceHandle 它对应的fiber
+ * @returns 
+ */
 export function createInstance(type, props, internalInstanceHandle) {
     const domElement = document.createElement(type);
     precacheFiberNode(internalInstanceHandle, domElement);

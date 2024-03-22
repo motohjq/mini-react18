@@ -13,8 +13,8 @@ export function getClosestInstanceFromNode(targetNode) {
 
 /**
  * 提前缓存fiber节点的实力到dom节点上
- * @param {*} hostInst 
- * @param {*} node 
+ * @param {*} hostInst fiber实例
+ * @param {*} node 真实dom
  */
 export function precacheFiberNode(hostInst, node) {
     node[internalInstanceKey] = hostInst;
