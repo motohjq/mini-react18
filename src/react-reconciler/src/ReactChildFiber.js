@@ -7,6 +7,12 @@ import isArray from 'shared/isArray';
  * @param {*} shouldTrackSideEffects 是否跟踪副作用
  */
 function createChildReconciler(shouldTrackSideEffects) {
+    function useFiber(fiber, pendingProps) {
+        const clone = createWorkInProgress(fiber, pendingProps);
+        clone.index = 0;
+        clone.sibling = null;
+        return clone;
+    }
 
     /**
      * 
@@ -16,12 +22,6 @@ function createChildReconciler(shouldTrackSideEffects) {
      * @returns 返回新的第一个子fiber
      */
     function reconcileSingleElement(returnFiber, currentFirstChild, element) {
-        function useFiber(fiber, pendingProps) {
-            const clone = createWorkInProgress(fiber, pendingProps);
-            clone.index = 0;
-            clone.sibling = null;
-            return clone;
-        }
         //新的虚拟dom key，也就是唯一标识
         const key = element.key;//null
         let child = currentFirstChild;

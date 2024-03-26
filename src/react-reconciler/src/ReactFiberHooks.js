@@ -9,9 +9,50 @@ let currentHook = null;
 
 const HooksDispatcherOnMount = {
     useReducer: mountReducer,
+    useState: mountState,
 }
 const HooksDispatcherOnUpdate = {
     useReducer: updateReducer,
+    useState: updateState,
+}
+
+function baseStateReducer(state, action) {
+    return typeof action === 'function' ? action(state) : action;
+}
+
+function updateState(initialState) {
+    return updateReducer(baseStateReducer);
+}
+
+function mountState(initialState) {
+    const hook = mountWorkInProgressHook();
+    hook.memoizedState = initialState;
+    const queue = {
+        pending: null,
+        dispatch: null,
+        lastRenderedReducer: baseStateReducer,//上一个reducer
+        lastRenderedState: initialState,//上一个state
+    }
+    hook.queue = queue;
+    const dispatch = (queue.dispatch = dispatchSetState.bind(null, currentlyRenderingFiber, queue));
+    return [hook.memoizedState, dispatch];
+}
+function dispatchSetState(fiber, queue, action) {
+    const update = {
+        action,
+        hasEagerState: false,//是否有急切的更新
+        eagerState: null,//急切的更新状态
+        next: null//指向下一个更新对象
+    }
+    //派发动作后，立刻用上一次的状态和上一次的reducer计算新状态
+    const { lastRenderedReducer, lastRenderedState } = queue;
+    const eagerState = lastRenderedReducer(lastRenderedState, action);
+    update.hasEagerState = true;
+    update.eagerState = eagerState;
+    if (Object.is(eagerState, lastRenderedState)) return;
+    //把当前最新的更新添加更新队列中，并且返回当前的根fiber
+    const root = enqueueConcurrentHookUpdate(fiber, queue, update);
+    scheduleUpdateOnFiber(root);
 }
 
 /**
@@ -23,10 +64,7 @@ function updateWorkInProgressHook() {
         const current = currentlyRenderingFiber.alternate;
         currentHook = current.memoizedState;
     } else {
-        const current = currentlyRenderingFiber.alternate;
-        currentHook = current.memoizedState;
-        // todo 待确认
-        // currentHook = currentHook.next;
+        currentHook = currentHook.next;
     }
     //根据老hook创建新hook
     const newHook = {
@@ -59,8 +97,12 @@ function updateReducer(reducer) {
         const firstUpdate = pendingQueue.next;
         let update = firstUpdate;
         do {
-            const action = update.action;
-            newState = reducer(newState, action);
+            if (update.hasEagerState) {
+                newState = update.eagerState;
+            } else {
+                const action = update.action;
+                newState = reducer(newState, action);
+            }
             update = update.next;
         } while (update !== null && update !== firstUpdate);
     }
@@ -136,5 +178,6 @@ export function renderWithHooks(current, workInProgress, Component, props) {
     const children = Component(props);
     currentlyRenderingFiber = null;
     workInProgressHook = null;
+    currentHook = null;
     return children;
 }

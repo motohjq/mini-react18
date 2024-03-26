@@ -24,21 +24,16 @@ import { createRoot } from "react-dom/client";
 //     )
 // }
 function counter(state, action) {
-    if (action.type === 'add') return state + action.payload;
+    if (action.type === 'add') return state + 1;
     return state;
 }
 function FunctionComponent() {
-    const [number, setNumber] = React.useReducer(counter, 0);
-    let attrs = { id: 'btn1' }
-    if (number == 6) {
-        delete attrs.id;
-        attrs.style = { color: 'red' };
-    }
-    // const [number2, setNumber2] = React.useReducer(counter, 0);
-    return <button {...attrs} onClick={() => {
-        setNumber({ type: 'add', payload: 1 });
-        setNumber({ type: 'add', payload: 2 });
-        setNumber({ type: 'add', payload: 3 });
+    // const [number, setNumber] = React.useReducer(counter, 0);
+    const [number, setNumber] = React.useState(0);
+
+    return <button onClick={() => {
+        setNumber(number + 1);
+        // setNumber(number + 2);
     }}>{number}</button>
 }
 
