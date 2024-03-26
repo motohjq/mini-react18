@@ -1,6 +1,6 @@
 import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols';
 import { createFiberFromElement, createFiberFromText, createWorkInProgress } from './ReactFiber';
-import { Placement } from './ReactFiberFlags';
+import { Placement, ChildDeletion } from './ReactFiberFlags';
 import isArray from 'shared/isArray';
 /**
  * 
@@ -13,6 +13,29 @@ function createChildReconciler(shouldTrackSideEffects) {
         clone.sibling = null;
         return clone;
     }
+
+    function deleteChild(returnFiber, childToDelete) {
+        if (!shouldTrackSideEffects) return;
+        const deletions = returnFiber.deletions;
+        if (deletions === null) {
+            returnFiber.deletions = [childToDelete];
+            returnFiber.flags |= ChildDeletion;
+        } else {
+            returnFiber.deletions.push(childToDelete);
+        }
+    }
+
+    //删除从currentFirstChild开始的之后所有fiber节点
+    function deleteRemainingChildren(returnFiber, currentFirstChild) {
+        if (!shouldTrackSideEffects) return;
+        let childToDelete = currentFirstChild;
+        while (childToDelete !== null) {
+            deleteChild(returnFiber, childToDelete);
+            childToDelete = childToDelete.sibling;
+        }
+        return null;
+    }
+
 
     /**
      * 
@@ -30,11 +53,17 @@ function createChildReconciler(shouldTrackSideEffects) {
             if (child.key === key) {
                 //判断老fiber对应的类型和新虚拟dom元素对应的类型是否相同
                 if (child.type === element.type) {
+                    deleteRemainingChildren(returnFiber, child.sibling);
                     //如果key和type都一样，就复用
                     const existing = useFiber(child, element.props);
                     existing.return = returnFiber;
                     return existing;
+                } else {
+                    //如果找到了key一样的老fiber，但类型不一样，那么就把剩下的全部删除
+                    deleteRemainingChildren(returnFiber, child);
                 }
+            } else {
+                deleteChild(returnFiber, child);
             }
             child = child.sibling;
         }

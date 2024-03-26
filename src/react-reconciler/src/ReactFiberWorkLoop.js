@@ -2,9 +2,9 @@ import { scheduleCallback } from 'scheduler';
 import { createWorkInProgress } from './ReactFiber';
 import { beginWork } from './ReactFiberBeginWork';
 import { completeWork } from './ReactFiberCompleteWork';
-import { MutationMask, NoFlags, Placement, Update } from './ReactFiberFlags';
+import { ChildDeletion, MutationMask, NoFlags, Placement, Update } from './ReactFiberFlags';
 import { commitMutationEffectsOnFiber } from './ReactFiberCommitWork';
-import { HostComponent, HostRoot, HostText } from './ReactWorkTags';
+import { FunctionComponent, HostComponent, HostRoot, HostText } from './ReactWorkTags';
 import { finishQueueingConcurrentUpdates } from './ReactFiberConcurrentUpdates';
 let workInProgress = null;
 let workInProgressRoot = null;
@@ -105,26 +105,35 @@ function completeUnitOfWork(unitOfWork) {
 }
 
 function printFinishedWork(fiber) {
+    const { flags, deletions } = fiber;
+    if ((flags & ChildDeletion) !== NoFlags) {
+        fiber.flags &= (~ChildDeletion);
+        console.log('子节点有删除' + (deletions.map(fiber => `${fiber.type}#${fiber.memoizedProps.id}`).join(',')));
+    }
     let child = fiber.child;
     while (child) {
         printFinishedWork(child);
         child = child.sibling;
     }
-    if (fiber.flags !== 0) {
-        // console.log(getFlags(fiber.flags), getTag(fiber.tag), fiber.type, fiber.memoizedProps);
+    if (fiber.flags !== NoFlags) {
+        console.log(getFlags(fiber), getTag(fiber.tag), typeof fiber.type === 'function' ? fiber.type.name : fiber.type, fiber.memoizedProps);
     }
 }
-function getFlags(flags) {
+function getFlags(fiber) {
+    const { flags, deletions } = fiber;
     if (flags === Placement) {
         return '插入'
     }
     if (flags === Update) {
         return '更新'
     }
+
     return flags;
 }
 function getTag(tag) {
     switch (tag) {
+        case FunctionComponent:
+            return 'FunctionComponent';
         case HostRoot:
             return 'HostRoot';
         case HostComponent:
