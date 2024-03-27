@@ -121,12 +121,16 @@ function printFinishedWork(fiber) {
 }
 function getFlags(fiber) {
     const { flags, deletions } = fiber;
+    if (flags === (Placement | Update)) {
+        return '移动'
+    }
     if (flags === Placement) {
         return '插入'
     }
     if (flags === Update) {
         return '更新'
     }
+
 
     return flags;
 }
