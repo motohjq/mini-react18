@@ -1,6 +1,6 @@
 import logger, { indent } from "shared/logger";
 import { FunctionComponent, HostComponent, HostRoot, HostText, IndeterminateComponent } from "./ReactWorkTags";
-import { processUpdateQueue } from './ReactFiberClassUpdateQueue';
+import { cloneUpdateQueue, processUpdateQueue } from './ReactFiberClassUpdateQueue';
 import { mountChildren, reconcileChildFibers } from './ReactChildFiber';
 import { shouldSetTextContent } from 'react-dom-bindings/src/client/ReactDOMHostConfig';
 import { renderWithHooks } from './ReactFiberHooks';
@@ -20,9 +20,11 @@ function reconcileChildren(current, workInProgress, nextChildren) {
         workInProgress.child = reconcileChildFibers(workInProgress, current.child, nextChildren);
     }
 }
-function updateHostRoot(current, workInProgress) {
+function updateHostRoot(current, workInProgress, renderLanes) {
+    const nextProps = workInProgress.pendingProps;
+    cloneUpdateQueue(current, workInProgress);
     //需要知道它的子虚拟dom，知道它的儿子的虚拟dom信息
-    processUpdateQueue(workInProgress);//workInProgress.memoizedState={element}
+    processUpdateQueue(workInProgress, nextProps, renderLanes);//workInProgress.memoizedState={element}
     const nextState = workInProgress.memoizedState;
     //nextChildren就是新的子虚拟dom
     const nextChildren = nextState.element;
@@ -74,21 +76,21 @@ export function updateFunctionComponent(current, workInProgress, Component, next
  * @param {*} workInProgress 新fiber
  * @returns 
  */
-export function beginWork(current, workInProgress) {
+export function beginWork(current, workInProgress, renderLanes) {
     logger(' '.repeat(indent.number) + "beginwork", workInProgress);
     indent.number += 2;
     switch (workInProgress.tag) {
         case IndeterminateComponent:
-            return mountIndeterminateComponent(current, workInProgress, workInProgress.type);
+            return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
         case FunctionComponent: {
             const Component = workInProgress.type;
             const nextProps = workInProgress.pendingProps;
-            return updateFunctionComponent(current, workInProgress, Component, nextProps);
+            return updateFunctionComponent(current, workInProgress, Component, nextProps, renderLanes);
         }
         case HostRoot:
-            return updateHostRoot(current, workInProgress);
+            return updateHostRoot(current, workInProgress, renderLanes);
         case HostComponent:
-            return updateHostComponent(current, workInProgress);
+            return updateHostComponent(current, workInProgress, renderLanes);
         case HostText:
             return null;
         default:
