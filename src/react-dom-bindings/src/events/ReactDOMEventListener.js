@@ -1,7 +1,7 @@
 import getEventTarget from './getEventTarget';
 import { getClosestInstanceFromNode } from '../client/ReactDOMComponentTree';
 import { dispatchEventForPluginEventSystem } from './DOMPluginEventSystem';
-import { ContinuousEventPriority, DefaultEventPriority, DiscreteEventPriority } from 'react-reconciler/src/ReactEventPriorities';
+import { ContinuousEventPriority, DefaultEventPriority, DiscreteEventPriority, getCurrentUpdatePriority, setCurrentUpdatePriority } from 'react-reconciler/src/ReactEventPriorities';
 
 export function createEventListenerWrapperWithPriority(
     targetContainer,
@@ -20,8 +20,16 @@ export function createEventListenerWrapperWithPriority(
  * @param {*} nativeEvent 原生的事件
  */
 function dispatchDiscreteEvent(domEventName, eventSystemFlags, container, nativeEvent) {
-    dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
-
+    // 在点击按钮的时候，需要设置更新优先级
+    // 先获取当前老的更新优先级
+    const previousPriority = getCurrentUpdatePriority();
+    try {
+        //把当前的更新优先级设置为离散事件优先级
+        setCurrentUpdatePriority(DiscreteEventPriority);
+        dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
+    } finally {
+        setCurrentUpdatePriority(previousPriority);
+    }
 }
 
 /**
