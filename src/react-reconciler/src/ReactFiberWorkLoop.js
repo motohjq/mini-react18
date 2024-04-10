@@ -242,8 +242,7 @@ function commitRootImpl(root) {
     }
     //等dom变更后，就可以把让root的current指向新的fiber树
     root.current = finishedWork;
-    root.pendingLanes = 16;
-    ensureRootIsScheduled(root);
+    // ensureRootIsScheduled(root);
 }
 
 function prepareFreshStack(root, renderLanes) {

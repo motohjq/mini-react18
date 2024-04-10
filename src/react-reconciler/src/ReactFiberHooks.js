@@ -128,12 +128,18 @@ function baseStateReducer(state, action) {
 }
 
 function updateState(initialState) {
-    return updateReducer(baseStateReducer);
+    return updateReducer(baseStateReducer, initialState);
 }
 
+/**
+ * hook的属性
+ * memoizedState 当前hook真正显示出来的状态
+ * baseState 第一个跳过的更新之前的状态
+ * lastRenderedState 上一个计算的状态
+ */
 function mountState(initialState) {
     const hook = mountWorkInProgressHook();
-    hook.memoizedState = initialState;
+    hook.memoizedState = hook.baseState = initialState;
     const queue = {
         pending: null,
         dispatch: null,
@@ -156,20 +162,20 @@ function dispatchSetState(fiber, queue, action) {
     }
     const alternate = fiber.alternate
     //当你派发动作后，我立刻用上一次的状态和上一次的reducer计算新状态
-    // if (
-    //     fiber.lanes === NoLanes &&
-    //     (alternate === null || alternate.lanes == NoLanes)
-    // ) {
-    //     //先获取队列上的老的状态和老的reducer
-    //     const { lastRenderedReducer, lastRenderedState } = queue
-    //     //使用上次的状态和上次的reducer结合本次action进行计算新状态
-    //     const eagerState = lastRenderedReducer(lastRenderedState, action)
-    //     update.hasEagerState = true
-    //     update.eagerState = eagerState
-    //     if (Object.is(eagerState, lastRenderedState)) {
-    //         return
-    //     }
-    // }
+    if (
+        fiber.lanes === NoLanes &&
+        (alternate === null || alternate.lanes == NoLanes)
+    ) {
+        //先获取队列上的老的状态和老的reducer
+        const { lastRenderedReducer, lastRenderedState } = queue
+        //使用上次的状态和上次的reducer结合本次action进行计算新状态
+        const eagerState = lastRenderedReducer(lastRenderedState, action)
+        update.hasEagerState = true
+        update.eagerState = eagerState
+        if (Object.is(eagerState, lastRenderedState)) {
+            return
+        }
+    }
     //下面是真正的入队更新，并调度更新逻辑
     const root = enqueueConcurrentHookUpdate(fiber, queue, update, lane)
     scheduleUpdateOnFiber(root, fiber, lane)
@@ -226,7 +232,8 @@ function updateReducer(reducer) {
             update = update.next;
         } while (update !== null && update !== firstUpdate);
     }
-    hook.memoizedState = newState;
+    //计算好新的状态后，不但要改变hook的状态，也要改变hook上队列的lastRenderedState
+    hook.memoizedState = queue.lastRenderedState = newState;
     return [hook.memoizedState, queue.dispatch];
 }
 

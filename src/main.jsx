@@ -83,24 +83,34 @@ function counter(state, action) {
 //     )
 // }
 
+// function FunctionComponent() {
+//     console.log("FunctionComponent")
+//     const [numbers, setNumbers] = React.useState(new Array(10).fill("A"))
+//     React.useEffect(() => {
+//         setTimeout(() => { }, 10)
+//         setNumbers((numbers) => numbers.map((number) => number + "B"))
+//         // setNumbers((numbers) => numbers.map((number) => number + "B"))
+//     }, [])
+//     return (
+//         <button
+//             onClick={() =>
+//                 setNumbers((numbers) => numbers.map((number) => number + "C"))
+//             }
+//         >
+//             {numbers.map((number, index) => (
+//                 <span key={index}>{number}</span>
+//             ))}
+//         </button>
+//     )
+// }
+
 function FunctionComponent() {
-    console.log("FunctionComponent")
-    const [numbers, setNumbers] = React.useState(new Array(10).fill("A"))
-    React.useEffect(() => {
-        setTimeout(() => { }, 10)
-        setNumbers((numbers) => numbers.map((number) => number + "B"))
-        // setNumbers((numbers) => numbers.map((number) => number + "B"))
-    }, [])
+    const [number, setNumber] = React.useState(0);
     return (
-        <button
-            onClick={() =>
-                setNumbers((numbers) => numbers.map((number) => number + "C"))
-            }
-        >
-            {numbers.map((number, index) => (
-                <span key={index}>{number}</span>
-            ))}
-        </button>
+        <button onClick={() => {
+            setNumber((number) => number + 1)
+            setNumber((number) => number + 2)
+        }}>{number}</button>
     )
 }
 
