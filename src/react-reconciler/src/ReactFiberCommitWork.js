@@ -1,5 +1,5 @@
 import { insertBefore, appendChild, commitUpdate, removeChild } from 'react-dom-bindings/src/client/ReactDOMHostConfig';
-import { LayoutMask, MutationMask, Passive, Placement, Update } from "./ReactFiberFlags";
+import { LayoutMask, MutationMask, Passive, Placement, Ref, Update } from "./ReactFiberFlags";
 import { FunctionComponent, HostComponent, HostRoot, HostText } from "./ReactWorkTags";
 import { HasEffect as HookHasEffect, Passive as HookPassive, Layout as HookLayout } from './ReactHookEffectTags';
 
@@ -226,6 +226,9 @@ export function commitMutationEffectsOnFiber(finishedWork, root) {
             recursivelyTraverseMutationEffects(root, finishedWork);
             //再处理自己身上的副作用
             commitReconciliationEffects(finishedWork);
+            if (flags & Ref) {
+                commitAttachRef(finishedWork);
+            }
             //处理dom更新
             if (flags & Update) {
                 //获取真实dom
@@ -246,6 +249,18 @@ export function commitMutationEffectsOnFiber(finishedWork, root) {
         }
         default:
             break;
+    }
+}
+
+function commitAttachRef(finishedWork) {
+    const ref = finishedWork.ref;
+    if (ref !== null) {
+        const instance = finishedWork.stateNode;
+        if (typeof ref === 'function') {
+            ref(instance);
+        } else {
+            ref.current = instance;
+        }
     }
 }
 

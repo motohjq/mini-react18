@@ -23,10 +23,10 @@ import { createRoot } from "react-dom/client";
 //         </h1>
 //     )
 // }
-function counter(state, action) {
-    if (action.type === 'add') return state + 1;
-    return state;
-}
+// function counter(state, action) {
+//     if (action.type === 'add') return state + 1;
+//     return state;
+// }
 // function FunctionComponent() {
 //     // const [number, setNumber] = React.useReducer(counter, 0);
 //     const [number, setNumber] = React.useState(0);
@@ -104,13 +104,54 @@ function counter(state, action) {
 //     )
 // }
 
+// function FunctionComponent() {
+//     const [number, setNumber] = React.useState(0);
+//     const buttonRef = React.useRef();
+//     React.useEffect(() => {
+//         console.log(buttonRef.current);
+//     }, [])
+//     return (
+//         <button ref={buttonRef} onClick={() => {
+//             setNumber((number) => number + 1)
+//             setNumber((number) => number + 2)
+//         }}>{number}</button>
+//     )
+// }
+
+let counter = 0
+let timer
+let bCounter = 0
+let cCounter = 0
 function FunctionComponent() {
-    const [number, setNumber] = React.useState(0);
+    const [numbers, setNumbers] = React.useState(new Array(100).fill("A"))
+    const divRef = React.useRef()
+    const updateB = (numbers) => new Array(100).fill(numbers[0] + "B")
+    updateB.id = "updateB" + bCounter++
+    const updateC = (numbers) => new Array(100).fill(numbers[0] + "C")
+    updateC.id = "updateC" + cCounter++
+    React.useEffect(() => {
+        timer = setInterval(() => {
+            divRef.current.click() //1
+            if (counter++ === 0) {
+                setNumbers(updateB) //16
+            }
+            divRef.current.click() //1
+            if (counter++ > 20) {
+                clearInterval(timer)
+            }
+        }, 1)
+    }, [])
     return (
-        <button onClick={() => {
-            setNumber((number) => number + 1)
-            setNumber((number) => number + 2)
-        }}>{number}</button>
+        <div
+            ref={divRef}
+            onClick={() => {
+                setNumbers(updateC)
+            }}
+        >
+            {numbers.map((number, index) => (
+                <span key={index}>{number}</span>
+            ))}
+        </div>
     )
 }
 

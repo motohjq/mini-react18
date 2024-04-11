@@ -7,7 +7,12 @@ import {
     finalizeInitialChildren,
     prepareUpdate
 } from 'react-dom-bindings/src/client/ReactDOMHostConfig';
-import { NoFlags, Update } from "./ReactFiberFlags";
+import { NoFlags, Update, Ref } from "./ReactFiberFlags";
+import { NoLane, NoLanes, mergeLanes } from "./ReactFiberLane";
+
+function markRef(workInProgress) {
+    workInProgress.flags |= Ref;
+}
 
 /**
  * 把当前的完成的fiber所有的子节点对应的真实dom兜挂载到自己父parent真实dom上
@@ -79,12 +84,18 @@ export function completeWork(current, workInProgress) {
             //如果老fiber存在，并且老fiber上真实dom节点，要走节点更新逻辑
             if (current !== null && workInProgress.stateNode !== null) {
                 updateHostComponent(current, workInProgress, type, newProps);
+                if ((current.ref !== workInProgress.ref) !== null) {
+                    markRef(workInProgress);
+                }
             } else {
                 const instance = createInstance(type, newProps, workInProgress);
                 //把自己所有的儿子都添加到自己身上
                 appendAllChildren(instance, workInProgress);
                 workInProgress.stateNode = instance;
                 finalizeInitialChildren(instance, type, newProps);
+                if (workInProgress.ref !== null) {
+                    markRef(workInProgress);
+                }
             }
 
             bubbleProperties(workInProgress);
@@ -106,13 +117,19 @@ export function completeWork(current, workInProgress) {
 }
 
 function bubbleProperties(completedWork) {
-    let subtreeFlags = NoFlags;
-    //遍历当前fiber的所有子节点，把所有后代节点的副作用全部合并
-    let child = completedWork.child;
+    let newChildLanes = NoLanes
+    let subtreeFlags = NoFlags
+    //遍历当前fiber的所有子节点，把所有的子节的副作用，以及子节点的子节点的副作用全部合并
+    let child = completedWork.child
     while (child !== null) {
-        subtreeFlags |= child.subtreeFlags;//儿子的副作用
-        subtreeFlags |= child.flags;
-        child = child.sibling;
+        newChildLanes = mergeLanes(
+            newChildLanes,
+            mergeLanes(child.lanes, child.childLanes)
+        )
+        subtreeFlags |= child.subtreeFlags
+        subtreeFlags |= child.flags
+        child = child.sibling
     }
-    completedWork.subtreeFlags = subtreeFlags;
+    completedWork.childLanes = newChildLanes
+    completedWork.subtreeFlags = subtreeFlags
 }

@@ -1,6 +1,6 @@
 import { createFiberRoot } from './ReactFiberRoot';
 import { createUpdate, enqueueUpdate } from './ReactFiberClassUpdateQueue';
-import { scheduleUpdateOnFiber, requestUpdateLane } from './ReactFiberWorkLoop';
+import { scheduleUpdateOnFiber, requestUpdateLane, requestEventTime } from './ReactFiberWorkLoop';
 
 export function createContainer(containerInfo) {
     return createFiberRoot(containerInfo);
@@ -13,6 +13,7 @@ export function createContainer(containerInfo) {
 export function updateContainer(element, container) {
     //获取当前的根fiber
     const current = container.current;
+    const eventTime = requestEventTime();
     //请求一个更新车道 16
     const lane = requestUpdateLane(current);
     //创建更新
@@ -21,5 +22,5 @@ export function updateContainer(element, container) {
     update.payload = { element };// h1
     //把此更新对象添加到current这个根fiber的更新队列上
     const root = enqueueUpdate(current, update, lane);
-    scheduleUpdateOnFiber(root, current, lane);
+    scheduleUpdateOnFiber(root, current, lane, eventTime);
 }

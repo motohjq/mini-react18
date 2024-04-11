@@ -6,6 +6,7 @@ import {
     NormalPriority as NormalSchedulerPriority,
     IdlePriority as IdleSchedulerPriority,
     cancelCallback as Scheduler_cancelCallback,
+    now
 } from './Scheduler';
 import { createWorkInProgress } from './ReactFiber';
 import { beginWork } from './ReactFiberBeginWork';
@@ -19,7 +20,7 @@ import {
 } from './ReactFiberCommitWork';
 import { FunctionComponent, HostComponent, HostRoot, HostText } from './ReactWorkTags';
 import { finishQueueingConcurrentUpdates } from './ReactFiberConcurrentUpdates';
-import { NoLanes, SyncLane, getHighestPriorityLane, getNextLanes, markRootUpdated, includesBlockingLane, NoLane, } from './ReactFiberLane';
+import { NoLanes, SyncLane, getHighestPriorityLane, getNextLanes, markRootUpdated, includesBlockingLane, NoLane, markStarvedLanesAsExpired, NoTimestamp, includesExpiredLane, mergeLanes, markRootFinished, } from './ReactFiberLane';
 import {
     getCurrentUpdatePriority,
     lanesToEventPriority,
@@ -44,20 +45,24 @@ const RootInProgress = 0
 const RootCompleted = 5
 //当渲染工作结束的时候当前的fiber树处于什么状态,默认进行中
 let workInProgressRootExitStatus = RootInProgress
+//保存当前的事件发生的时间
+let currentEventTime = NoTimestamp;
 
 /**
  * 计划更新root
  * 源码中此处有一个调度任务的功能
  * @param {*} root 
  */
-export function scheduleUpdateOnFiber(root, fiber, lane) {
+export function scheduleUpdateOnFiber(root, fiber, lane, eventTime) {
     markRootUpdated(root, lane);
     //确保调度执行root上的更新
-    ensureRootIsScheduled(root);
+    ensureRootIsScheduled(root, eventTime);
 }
-function ensureRootIsScheduled(root) {
+function ensureRootIsScheduled(root, currentTime) {
     //先获取当前根上执行任务
     const existingCallbackNode = root.callbackNode;
+    //把所有饿死的赛道标记为过期
+    markStarvedLanesAsExpired(root, currentTime);
     //获取当前优先级最高的车道
     const nextLanes = getNextLanes(root, workInProgressRootRenderLanes);//16
     //如果没有要执行的任务
@@ -151,7 +156,15 @@ function performConcurrentWorkOnRoot(root, didTimeout) {
     }
     //如果不包含阻塞的车道，并且没有超时，就可以并行渲染,就是启用时间分片
     //所以说默认更新车道是同步的,不能启用时间分片
-    const shouldTimeSlice = !includesBlockingLane(root, lanes) && !didTimeout
+    //是否不包含阻塞车道
+    const nonIncludesBlockingLane = !includesBlockingLane(root, lanes);
+    //是否不包含过期的车道
+    const nonIncludesExpiredLane = !includesExpiredLane(root, lanes);
+    //时间片没有过期
+    const nonTimeout = !didTimeout
+    //三个变量都是真，才能进行时间分片，也就是进行并发渲染，也就是可以中断执行
+    const shouldTimeSlice =
+        nonIncludesBlockingLane && nonIncludesExpiredLane && nonTimeout
     // console.log("shouldTimeSlice", shouldTimeSlice)
     //执行渲染，得到退出的状态
     const exitStatus = shouldTimeSlice
@@ -211,10 +224,14 @@ function commitRoot(root) {
 function commitRootImpl(root) {
     //先获取新的构建好的fiber树的根fiber tag->3
     const { finishedWork } = root;
+    // console.log('commit', finishedWork.child.memoizedState.memoizedState[0]);
     workInProgressRoot = null;
     workInProgressRootRenderLanes = NoLanes;
     root.callbackNode = null;
     root.callbackPriority = NoLane;
+    //合并统计当前新的根上剩下的车道
+    const remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
+    markRootFinished(root, remainingLanes);
     if ((finishedWork.subtreeFlags & Passive) !== NoFlags
         || (finishedWork.flags & Passive) !== NoFlags) {
         if (!rootDoesHavePassiveEffect) {
@@ -242,7 +259,8 @@ function commitRootImpl(root) {
     }
     //等dom变更后，就可以把让root的current指向新的fiber树
     root.current = finishedWork;
-    // ensureRootIsScheduled(root);
+    //在提交之后，因为根上可能会有跳过的更新，所以需要重新再次调度
+    ensureRootIsScheduled(root, now());
 }
 
 function prepareFreshStack(root, renderLanes) {
@@ -265,7 +283,7 @@ function workLoopConcurrent() {
     //如果有下一个要构建的fiber并且时间片没有过期
     while (workInProgress !== null && !shouldYield()) {
         // console.log("shouldYield()", shouldYield(), workInProgress)
-        sleep(100)
+        sleep(5)
         performUnitOfWork(workInProgress)
     }
 }
@@ -376,4 +394,10 @@ function sleep(duration) {
             return
         }
     }
+}
+
+//请求当前的时间
+export function requestEventTime() {
+    currentEventTime = now();
+    return currentEventTime //performance.now()
 }

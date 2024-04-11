@@ -64,8 +64,8 @@ export function mountIndeterminateComponent(current, workInProgress, Component) 
     reconcileChildren(current, workInProgress, value);
     return workInProgress.child;
 }
-export function updateFunctionComponent(current, workInProgress, Component, nextProps) {
-    const nextChildren = renderWithHooks(current, workInProgress, Component, nextProps);
+export function updateFunctionComponent(current, workInProgress, Component, nextProps, renderLanes) {
+    const nextChildren = renderWithHooks(current, workInProgress, Component, nextProps, renderLanes);
     reconcileChildren(current, workInProgress, nextChildren);
     console.log(workInProgress.child, '??????');
     return workInProgress.child;
@@ -79,6 +79,8 @@ export function updateFunctionComponent(current, workInProgress, Component, next
 export function beginWork(current, workInProgress, renderLanes) {
     logger(' '.repeat(indent.number) + "beginwork", workInProgress);
     indent.number += 2;
+    //在构建fiber树之前清空lanes
+    workInProgress.lanes = 0;
     switch (workInProgress.tag) {
         case IndeterminateComponent:
             return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
