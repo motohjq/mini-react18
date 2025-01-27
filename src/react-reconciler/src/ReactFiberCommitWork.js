@@ -118,7 +118,7 @@ function getHostParentFiber(fiber) {
  */
 function insertOrAppendPlacementNode(node, before, parent) {
     const { tag } = node;
-    //判断此fiber对应的节点是不是真实dom节点
+    //判断此fiber对应的节点是不是真实dom节点（准确说是不是原生节点或者文本节点）
     const isHost = tag === HostComponent || tag === HostText;
     //如果是的话直接插入
     if (isHost) {
@@ -129,7 +129,7 @@ function insertOrAppendPlacementNode(node, before, parent) {
             appendChild(parent, stateNode);
         }
     } else {
-        //如果node不是真实dom节点，获取它的大儿子
+        //如果node不是真实dom节点，获取它的大儿子（准确说是函数组件等）
         const { child } = node;
         if (child !== null) {
             insertOrAppendPlacementNode(child, before, parent);//把大儿子添加到父亲dom节点里

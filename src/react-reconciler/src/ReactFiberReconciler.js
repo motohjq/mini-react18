@@ -21,6 +21,6 @@ export function updateContainer(element, container) {
     //要更新的虚拟dom
     update.payload = { element };// h1
     //把此更新对象添加到current这个根fiber的更新队列上
-    const root = enqueueUpdate(current, update, lane);
+    const root = enqueueUpdate(current, update, lane); // 这里返回的root是FiberRootNode
     scheduleUpdateOnFiber(root, current, lane, eventTime);
 }
