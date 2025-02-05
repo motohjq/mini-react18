@@ -57,7 +57,7 @@ function updateEffectImpl(fiberFlags, hookFlags, create, deps) {
     let destroy;
     //上一个老hook
     if (currentHook !== null) {
-        // 获取此useEffect这个hook上的老effect对象 create deps distroy
+        // 获取此useEffect这个hook上的老effect对象 create deps destroy
         const prevEffect = currentHook.memoizedState;
         destroy = prevEffect.destroy;
         if (nextDeps !== null) {
@@ -226,11 +226,15 @@ function updateWorkInProgressHook() {
 }
 
 function updateReducer(reducer) {
+    // 获取新的hook
     const hook = updateWorkInProgressHook()
+    // 获取新的hook的更新队列
     const queue = hook.queue
     queue.lastRenderedReducer = reducer
+    // 获取老的hook
     const current = currentHook
     let baseQueue = current.baseQueue
+    // 获取将要生效的更新队列
     const pendingQueue = queue.pending
     //把新旧更新链表合并
     if (pendingQueue !== null) {

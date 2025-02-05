@@ -101,7 +101,7 @@ function workLoop(startTime) {
     //取出优先级最高的任务
     currentTask = peek(taskQueue);
     while (currentTask !== null) {
-        //如果此任务的过期时间小于当前时间，就是说没有过期，并且需要放弃执行（时间片到期）
+        //如果此任务的过期时间大于当前时间，就是说没有过期，并且需要放弃执行（时间片到期）
         if (currentTask.expirationTime > currentTime && shouldYieldToHost()) {
             //跳出工作循环
             break;

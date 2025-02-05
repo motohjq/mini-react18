@@ -35,8 +35,8 @@ export function setCurrentUpdatePriority(newPriority) {
 
 /**
  * 判断eventPriority是不是比lane要小，更小意味着优先级更高
- * @param {*} a
- * @param {*} b
+ * @param {*} eventPriority
+ * @param {*} lane
  * @returns
  */
 export function isHigherEventPriority(eventPriority, lane) {

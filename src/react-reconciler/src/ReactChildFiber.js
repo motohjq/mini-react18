@@ -42,7 +42,7 @@ function createChildReconciler(shouldTrackSideEffects) {
      * 
      * @param {*} returnFiber 根fiber div#root对应的fiber
      * @param {*} currentFirstChild 老的函数组件对应的fiber
-     * @param {*} element 老的虚拟dom对象
+     * @param {*} element 新的虚拟dom对象
      * @returns 返回新的第一个子fiber
      */
     function reconcileSingleElement(returnFiber, currentFirstChild, element) {
